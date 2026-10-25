@@ -26,8 +26,6 @@
 
 static const char *TAG = "sensors";
 
-/* Seconds between power-up and the first poll: the probes and the bus
- * settle, and the first conversion is real (appconf_reading_ok). */
 #define SETTLE_S       5
 #define MIN_GAP_MS     1000
 #define MAX_ON_BUS     8
@@ -103,9 +101,8 @@ static void attach(int i, onewire_device_t *dev)
     ds18b20_set_resolution(ctx.slot[i].dev, DS18B20_RESOLUTION_12B);
 }
 
-/* Returns the DS18B20s on the bus in ROM order. A search error ends the
- * list early; bound sensors are then still read directly, so a glitch
- * during the search costs nothing. */
+/* A search error ends the list early; bound probes are still read
+ * directly. */
 static int scan(onewire_device_t *found)
 {
     onewire_device_iter_handle_t it;
@@ -145,10 +142,8 @@ static int scan(onewire_device_t *found)
     return n;
 }
 
-/* Known sensors keep their slots; unknown ones get the free slots in ROM
- * order (appconf_free_slot). New bindings are saved so a sensor keeps
- * its slot and name across reboots. A truncated search binds nothing:
- * the probes it did not reach are not missing. */
+/* A truncated search binds nothing: probes it did not reach are not
+ * missing. */
 static void bind(onewire_device_t *found, int n, bool seen[APPCONF_SENSOR_COUNT])
 {
     bool bound[MAX_ON_BUS] = { 0 };
@@ -190,7 +185,6 @@ static bool read_slot(int i, int attempts, int16_t *out)
     slot_t *sl = &ctx.slot[i];
     for (int attempt = 1; attempt <= attempts; attempt++) {
         float t;
-        /* The driver waits the 750 ms conversion time itself. */
         esp_err_t err = ds18b20_trigger_temperature_conversion(sl->dev);
         if (err == ESP_OK) {
             err = ds18b20_get_temperature(sl->dev, &t);
@@ -216,9 +210,6 @@ static void poll_once(void)
     bind(found, n, seen);
     ctx.found = (uint8_t)n;
 
-    /* A probe the search saw, or that answered last time, gets the
-     * retries; one the search missed gets a single try. A successful read
-     * is what makes a probe present. */
     int16_t temps[APPCONF_SENSOR_COUNT];
     bool ok[APPCONF_SENSOR_COUNT];
     for (int i = 0; i < APPCONF_SENSOR_COUNT; i++) {
@@ -238,8 +229,8 @@ static void poll_once(void)
             sl->read_mono_us = now_mono;
             sl->read_epoch = now_epoch;
         } else if (!seen[i]) {
-            /* Gone from the bus: the last value is dropped right away. A
-             * probe that is seen but fails to convert keeps it until stale. */
+            /* Gone from the bus: drop the value now. A probe that is seen but
+             * fails to convert keeps it until stale. */
             sl->valid = false;
         }
         if (sl->present && !ok[i]) {

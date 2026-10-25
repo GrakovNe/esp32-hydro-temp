@@ -14,25 +14,24 @@ extern "C" {
 #endif
 
 typedef struct {
-    uint64_t rom;          /* bound ROM code, 0 when the slot is free */
-    bool     present;      /* answered at the last poll */
-    bool     valid;        /* temp_c100 holds a reading */
+    uint64_t rom;
+    bool     present;
+    bool     valid;
     int16_t  temp_c100;
-    uint32_t age_ms;       /* since that reading, saturates */
-    int64_t  read_epoch;   /* unix time of that reading, -1 when unsynced */
-    uint32_t errors;       /* failed conversions and CRC errors */
+    uint32_t age_ms;       /* saturates */
+    int64_t  read_epoch;   /* -1 when the clock was not synced */
+    uint32_t errors;
 } sensors_slot_t;
 
 typedef struct {
     sensors_slot_t slot[APPCONF_SENSOR_COUNT];
-    uint32_t seq;          /* increments after every completed poll */
-    uint32_t max_age_ms;   /* freshness limit for this poll period, see fresh.h */
-    uint8_t  found;        /* devices on the bus at the last scan */
+    uint32_t seq;
+    uint32_t max_age_ms;
+    uint8_t  found;
     bool     bus_ok;
 } sensors_reading_t;
 
-/* Starts the bus and the poll task. cfg is not const: the poll task binds
- * ROM codes into cfg->sensor[].rom and saves them (settings_save_rom). */
+/* Not const: the poll task stores bound ROMs in cfg. */
 void sensors_start(appconf_t *cfg);
 
 void sensors_get(sensors_reading_t *out);

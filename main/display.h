@@ -10,8 +10,6 @@
 extern "C" {
 #endif
 
-/* Starts the OLED and a task that redraws it when the readings or the
- * Wi-Fi mode change. Without a display no task is started. */
 void display_start(const appconf_t *cfg, const char device_id[5]);
 
 #ifdef __cplusplus

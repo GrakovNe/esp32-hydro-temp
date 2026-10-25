@@ -14,7 +14,7 @@
 
 static const char *TAG = "oled";
 
-/* SSD1306 page layout: byte = 8 vertical pixels, bit 0 on top. */
+/* SSD1306 page: byte = 8 vertical pixels, bit 0 on top */
 static uint8_t s_fb[OLED_W * OLED_H / 8];
 static esp_lcd_panel_handle_t s_panel;
 

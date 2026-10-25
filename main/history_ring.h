@@ -17,7 +17,7 @@
 #define HIST_NO_TEMP ((int16_t)-32768)
 
 typedef struct {
-    uint32_t t;                        /* window start, unix s; 0 = empty slot */
+    uint32_t t;                        /* 0 = empty */
     int16_t  temp_c100[HIST_CHANNELS];
 } hist_rec_t;
 
@@ -36,5 +36,4 @@ void hist_store_append(hist_store_t *s, hist_rec_t r);
 
 uint16_t hist_store_sorted(const hist_store_t *s, hist_rec_t *out);
 
-/* The most recently appended record; false when the ring is empty. */
 bool hist_store_last(const hist_store_t *s, hist_rec_t *out);

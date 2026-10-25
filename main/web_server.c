@@ -41,8 +41,7 @@ static char s_device_id[5];
 static char s_mac_str[18];
 static const appconf_t *s_cfg;
 
-/* The config POST works on a full appconf_t; too big for the httpd stack
- * and the server is single-threaded, so it lives here. */
+/* Too big for the httpd stack; the server is single-threaded. */
 static appconf_t s_merged;
 
 static void add_str_or_null(cJSON *obj, const char *key, const char *val)
@@ -97,7 +96,6 @@ static int read_body(httpd_req_t *req, char *buf, size_t cap)
     }
     size_t total = 0;
     while (total < (size_t)req->content_len) {
-        /* httpd_req_recv() can return a partial read. */
         int n = httpd_req_recv(req, buf + total, req->content_len - total);
         if (n <= 0) {
             return -1;
@@ -174,8 +172,6 @@ static void add_timestamp(cJSON *obj, const char *key)
     }
 }
 
-/* One sensor as the dashboard sees it: name, range and the reading with
- * its verdict, or null for a reading that is missing or stale. */
 static cJSON *sensor_json(int i, const sensors_reading_t *r)
 {
     const appconf_sensor_t *sc = &s_cfg->sensor[i];
@@ -228,8 +224,7 @@ static esp_err_t handler_current(httpd_req_t *req)
     return send_json(req, "200 OK", root);
 }
 
-/* 288 records as cJSON would be ~80 KB of heap; the format is simple
- * enough to write by hand in chunks. */
+/* cJSON would need ~80 KB of heap for 288 records. */
 static esp_err_t handler_history(httpd_req_t *req)
 {
     hist_rec_t *recs = malloc(sizeof(hist_rec_t) * HIST_RING_CAP);
@@ -452,8 +447,7 @@ static void restart_timer_cb(void *arg)
     esp_restart();
 }
 
-/* Restart after the response has left: a restart inside the handler
- * would cut the connection before the client sees the answer. */
+/* Restart after the response has left, not inside the handler. */
 static void schedule_restart(void)
 {
     history_flush();
@@ -487,8 +481,7 @@ static esp_err_t handler_config_post(httpd_req_t *req)
         return send_json_err(req, "body is not valid JSON");
     }
 
-    /* NVS is the base, not s_cfg: the sensor module updates ROM keys in
-     * NVS and this module only reads the boot-time struct. */
+    /* NVS, not s_cfg: the sensor module writes ROM keys only to NVS. */
     appconf_t *m = &s_merged;
     settings_load(m, s_device_id);
     char err[160];

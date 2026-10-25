@@ -15,10 +15,8 @@ void settings_nvs_init(void);
 
 void settings_load(appconf_t *c, const char device_id[5]);
 
-/* Writes everything but the ROM keys. */
 esp_err_t settings_save(const appconf_t *c);
 
-/* The ROM keys have one writer: the sensor module. */
 esp_err_t settings_save_rom(int slot, uint64_t rom);
 
 #ifdef __cplusplus

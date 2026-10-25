@@ -210,7 +210,6 @@ char appconf_sensor_letter(const char *name)
 
 int16_t appconf_round_c10(int16_t c100)
 {
-    /* half away from zero */
     int v = c100 >= 0 ? (c100 + 5) / 10 : -((-c100 + 5) / 10);
     return (int16_t)(v * 10);
 }
@@ -451,9 +450,9 @@ int appconf_sanitize(appconf_t *c, const char device_id[5])
         return 0;
     }
 
-    /* The defaults validate, and a group is only taken when the result
-     * still does, so the outcome is valid whatever was stored. */
-    static appconf_t good, next;   /* too big for the stack; boot only */
+    /* Defaults validate and a group is taken only if the result still
+ * does, so the outcome is valid whatever was stored. */
+    static appconf_t good, next;   /* too big for the stack */
     appconf_defaults(&good, device_id);
     for (int i = 0; i < APPCONF_SENSOR_COUNT; i++) {
         good.sensor[i].rom = c->sensor[i].rom;

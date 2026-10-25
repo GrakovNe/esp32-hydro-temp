@@ -29,7 +29,7 @@ static const char *TAG = "mqtt";
 
 typedef struct {
     char topic[APPCONF_TOPIC_MAX + 1];
-    char id_temp[40];      /* HA object id, also the unique_id */
+    char id_temp[40];
     char id_range[40];
 } slot_topics_t;
 
@@ -52,9 +52,8 @@ static struct {
     uint32_t errors;
 } ctx;
 
-/* Both entities of a slot read the slot's state topic. The entity is
- * unavailable while the device is offline (last will) or while that slot
- * publishes a null temperature (probe missing or stale). */
+/* An entity is unavailable while the device is offline or its slot
+ * publishes a null temperature. */
 static cJSON *discovery_base(int i, const char *suffix, const char *object_id)
 {
     cJSON *root = cJSON_CreateObject();
@@ -178,8 +177,6 @@ static void publish_availability(void)
     ESP_LOGI(TAG, "availability: %s", AVAIL_ONLINE);
 }
 
-/* temperature and out_of_range are null for a probe without a fresh
- * reading; the range and the message itself are published regardless. */
 static char *reading_json(const sensors_reading_t *r, int i)
 {
     cJSON *root = cJSON_CreateObject();
@@ -209,7 +206,6 @@ static char *reading_json(const sensors_reading_t *r, int i)
     return out;
 }
 
-/* Returns the number of sensors whose message was accepted by the client. */
 static int publish_readings(const sensors_reading_t *r)
 {
     int published = 0;
@@ -273,9 +269,8 @@ static void publish_task(void *arg)
             }
         }
 
-        /* One publish per poll, retried every second until both messages
-         * are accepted. mqtt_event resets published_seq together with
-         * discovery_dirty, so the state follows the configs. */
+        /* Retried until both messages are accepted. mqtt_event resets
+         * published_seq with discovery_dirty, so state follows configs. */
         sensors_reading_t r;
         sensors_get(&r);
         if (r.seq == 0 || r.seq == ctx.published_seq) {

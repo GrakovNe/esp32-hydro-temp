@@ -19,7 +19,6 @@ test_history_ring: test_history_ring.c tinytest.h $(MAIN)/history_ring.c $(MAIN)
 test_fresh: test_fresh.c tinytest.h $(MAIN)/fresh.h $(MAIN)/sensors.h
 	$(CC) $(CFLAGS) -I$(MAIN) -I$(APPCONF)/include -o $@ test_fresh.c
 
-# cJSON comes from the ESP-IDF checkout; the merge logic has no other IDF dependency.
 test_config_merge: test_config_merge.c tinytest.h $(MAIN)/config_merge.c $(MAIN)/config_merge.h $(APPCONF)/appconf.c
 	$(CC) $(CFLAGS) -Wno-deprecated-declarations -I$(MAIN) -I$(APPCONF)/include -I$(CJSON) -o $@ \
 	    test_config_merge.c $(MAIN)/config_merge.c $(APPCONF)/appconf.c $(CJSON)/cJSON.c -lm

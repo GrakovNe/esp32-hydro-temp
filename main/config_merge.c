@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <string.h>
 
-/* dst_sz is the buffer size; the string may be one byte shorter. */
 static bool merge_str(const cJSON *obj, const char *key, char *dst, size_t dst_sz,
                       char *err, size_t err_sz)
 {
@@ -61,7 +60,6 @@ static bool merge_u16(const cJSON *obj, const char *key, uint16_t *dst,
     return true;
 }
 
-/* Temperatures arrive as decimals ("22.5") and are stored in hundredths. */
 static bool merge_temp(const cJSON *obj, const char *key, int16_t *dst,
                        char *err, size_t err_sz)
 {

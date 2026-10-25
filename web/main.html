@@ -142,11 +142,10 @@ const pad = n => String(n).padStart(2, "0");
 const hhmm = t => { const d = new Date(t * 1000); return pad(d.getHours()) + ":" + pad(d.getMinutes()); };
 const desc = parts => parts.map(p => "<span>" + p + "</span>").join("<span>·</span>");
 const ago = s => s < 60 ? s + " s ago" : s < 3600 ? Math.floor(s / 60) + " min ago" : Math.floor(s / 3600) + " h ago";
-/* Same rounding as the firmware: hundredths to a tenth, half away from zero. */
+/* Same rounding as the firmware: half away from zero. */
 const fmt1 = v => { const h = Math.round(v * 100), t = h >= 0 ? Math.floor((h + 5) / 10) : -Math.floor((-h + 5) / 10); return (t / 10).toFixed(1); };
 const zone = (v, s) => v < s.low ? "cold" : v > s.high ? "bad" : "good";
-/* The track spans one range width on each side of the allowed range,
- * so the allowed band always sits in its middle third. */
+/* The allowed band always sits in the middle third of the track. */
 const trackLo = s => s.low - (s.high - s.low);
 const trackSpan = s => 3 * (s.high - s.low);
 const every = s => s < 60 ? s + " s" : s % 60 ? (s / 60).toFixed(1) + " min" : s / 60 + " min";
@@ -161,7 +160,6 @@ function renderReading(i, s) {
     '<span style="left:66.7%">' + fmt1(s.high) + "</span>" +
     '<span style="left:100%;transform:translateX(-100%)">' + fmt1(trackLo(s) + trackSpan(s)) + "</span>";
   if (s.temperature != null) {
-    /* The verdict comes from the device; low/high only tell cold from warm. */
     const z = !s.out_of_range ? "good" : s.temperature < s.low ? "cold" : "bad";
     $("t" + i).textContent = fmt1(s.temperature);
     d.className = "d";

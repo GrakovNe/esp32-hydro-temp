@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # tags, so the firmware version is the tag
+          fetch-depth: 0   # tags give the firmware its version
 
       - name: Build firmware
         uses: espressif/esp-idf-ci-action@v1
@@ -31,8 +31,6 @@ jobs:
             0x8000 build/partition_table/partition-table.bin
             0x10000 build/esp32_hydro_temp.bin
 
-      # A pushed tag names the release itself; a manual run gets the next
-      # build number.
       - name: Version
         id: ver
         run: |

@@ -8,9 +8,7 @@
 
 #include "sensors.h"
 
-/* A reading older than two poll periods plus a margin means every
- * conversion since has failed; a probe that stopped answering is dropped
- * right away by the sensor module (valid is cleared). */
+/* two missed polls plus a margin */
 #define FRESH_MARGIN_MS 30000u
 
 static inline uint32_t fresh_max_age_ms(uint32_t poll_ms)

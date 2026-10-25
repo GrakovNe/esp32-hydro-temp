@@ -355,7 +355,7 @@ function pick(ssid, secure) {
   $("passwrap").style.display = secure ? "" : "none";
   $("passfor").textContent = ssid;
   if (ssid !== savedSsid) {
-    wifiPassDirty = true; /* a new network always gets the password as typed, empty for open */
+    wifiPassDirty = true;
     $("pass").value = "";
     $("passhint").textContent = "";
     $("passhint").className = "hint";
@@ -388,7 +388,6 @@ function syncChecks() {
 }
 $("mq_en").addEventListener("change", syncChecks);
 $("mq_tls").addEventListener("change", () => {
-  /* Only the standard ports follow the TLS switch; a custom port stays. */
   const p = $("mq_port");
   if ($("mq_tls").checked && Number(p.value) === DEF_PORT) p.value = String(DEF_PORT_TLS);
   if (!$("mq_tls").checked && Number(p.value) === DEF_PORT_TLS) p.value = String(DEF_PORT);

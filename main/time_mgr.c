@@ -15,7 +15,6 @@ static volatile bool s_synced;
 
 static void on_sync(struct timeval *tv)
 {
-
     s_synced = true;
     ESP_LOGI(TAG, "synced, unix time %lld", (long long)tv->tv_sec);
 }

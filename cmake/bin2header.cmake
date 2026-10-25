@@ -1,5 +1,5 @@
-# The variable must come before HEX: with HEX first CMake reads into a
-# variable named HEX and leaves ours empty without an error.
+# The variable must come before HEX, or CMake reads into a variable
+# named HEX and leaves ours empty.
 file(READ "${BIN}" hx HEX)
 string(REGEX MATCHALL ".." bytes "${hx}")
 list(LENGTH bytes n)

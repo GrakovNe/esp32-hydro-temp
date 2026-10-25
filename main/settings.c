@@ -35,7 +35,6 @@ static const char *TAG = "settings";
 #define KEY_MQ_PFX  "mq_pfx"
 #define KEY_MQ_DISC "mq_disc"
 
-/* Per-slot keys: s<i>_name, s<i>_low, s<i>_high, s<i>_rom. */
 static const char *slot_key(int i, const char *field, char *buf, size_t sz)
 {
     snprintf(buf, sz, "s%d_%s", i, field);
@@ -67,8 +66,7 @@ void settings_nvs_init(void)
     }
     ESP_ERROR_CHECK(err);
 
-    /* History is not worth a boot loop: on any other failure it stays
-     * disabled (history_start() cannot open the partition and says so). */
+    /* History is not worth a boot loop: on failure it stays disabled. */
     err = nvs_flash_init_partition(HISTORY_PART_NAME);
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         erase_partition_by_name(HISTORY_PART_NAME);

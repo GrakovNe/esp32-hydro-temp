@@ -35,7 +35,7 @@ static void test_hostname(void)
     appconf_hostname("a_b!", ID, h, sizeof h);
     CHECK_STR(h, "a-b");
 
-    appconf_hostname("МойДатчик", ID, h, sizeof h);
+    appconf_hostname("\xc3\x84\xc3\x96\xc3\x9c", ID, h, sizeof h);
     CHECK_STR(h, "hydrotemp-1a2b");
 
     appconf_hostname("", ID, h, sizeof h);
@@ -136,9 +136,9 @@ static void test_sensor_helpers(void)
     seen[0] = true;
     CHECK(appconf_free_slot(slots, seen) == 1);
     slots[0].rom = 1; slots[1].rom = 0; seen[0] = false; seen[1] = false;
-    CHECK(appconf_free_slot(slots, seen) == 1);      /* empty before missing */
+    CHECK(appconf_free_slot(slots, seen) == 1);
     slots[1].rom = 2;
-    CHECK(appconf_free_slot(slots, seen) == 0);      /* both missing: first */
+    CHECK(appconf_free_slot(slots, seen) == 0);
     seen[0] = true; seen[1] = true;
     CHECK(appconf_free_slot(slots, seen) == -1);
 }
@@ -284,7 +284,6 @@ static void test_sanitize(void)
     appconf_defaults(&c, ID);
     CHECK(appconf_sanitize(&c, ID) == 0);
 
-    /* What an old firmware let through: a reserved name next to good data. */
     strcpy(c.sensor[0].name, "Availability");
     c.sensor[0].rom = 0x28216531054AC79Bull;
     strcpy(c.sensor[1].name, "Potato");

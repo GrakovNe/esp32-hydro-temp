@@ -40,9 +40,8 @@ static void store_save_locked(void)
     }
 }
 
-/* The ring in RAM always holds the running average of the open window
- * (the API and the chart see every poll); flash gets the ring once per
- * window, when it closes, and on a planned restart. */
+/* RAM keeps the running average of the open window; flash is written
+ * once per window and before a planned restart. */
 static void update_window_locked(void)
 {
     hist_rec_t r = { .t = s_window };

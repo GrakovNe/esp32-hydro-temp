@@ -20,7 +20,6 @@
 
 static const char *TAG = "display";
 
-/* LAYOUT_* comes from glyphs.h, where tools/gen_glyphs.py defines it. */
 _Static_assert(LAYOUT_SCREEN_W == OLED_W && LAYOUT_SCREEN_H == OLED_H,
                "generator and panel disagree on the screen size");
 _Static_assert(APPCONF_SENSOR_COUNT * LAYOUT_ROW_H <= LAYOUT_SCREEN_H,
@@ -46,8 +45,6 @@ static const glyph_t *glyph(char c)
     return glyph('?');
 }
 
-/* scale 1 draws the glyph as is, scale 2 at half size (every other pixel;
- * the 4 px strokes become 2 px). */
 static void blit_glyph(const glyph_t *g, int x, int y, int scale)
 {
     int stride = (g->w + 7) / 8;

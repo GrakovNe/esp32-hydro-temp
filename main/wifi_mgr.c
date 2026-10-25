@@ -156,7 +156,6 @@ static void sta_connect(void)
         return;
     }
     if (s_mgr.connect_pending) {
-
         return;
     }
     wifi_config_t st = { 0 };
@@ -229,7 +228,6 @@ static void on_sta_disconnected(void *arg, esp_event_base_t base, int32_t id,
                                    ? FALLBACK_RETRY_US
                                    : CONNECTING_RETRY_US);
     if (s_mgr.mode == WIFI_MGR_NORMAL) {
-
         set_mode(WIFI_MGR_CONNECTING);
     }
 }
@@ -269,7 +267,6 @@ static void on_scan_done(void *arg, esp_event_base_t base, int32_t id,
     if (err != ESP_OK) {
         ESP_LOGW(TAG, "scan failed: %s", esp_err_to_name(err));
     } else {
-
         for (uint16_t i = 0; i < n; i++) {
             if (recs[i].ssid[0] == '\0') {
                 continue;
@@ -446,7 +443,6 @@ void wifi_mgr_get_status(wifi_mgr_status_t *out)
 
 void wifi_mgr_scan_start(void)
 {
-
     if (s_mgr.scan_busy) {
         return;
     }
