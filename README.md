@@ -44,7 +44,8 @@ esptool --chip esp32 merge-bin -o build/hydrotemp.bin \
   0x10000 build/esp32_hydro_temp.bin
 ```
 
-A release is a pushed `v*` tag: GitHub Actions builds both images,
+A release is a manual run of the Release workflow (`gh workflow run release.yml`,
+named `v1.0.<run>`) or a pushed `v*` tag: GitHub Actions builds both images,
 attaches them to the release and publishes the flasher page to GitHub
 Pages.
 
