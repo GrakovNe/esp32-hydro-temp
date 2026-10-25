@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HydroTemp · Install</title>
+<style>
+:root {
+  --bg:#FAFAFA; --text:#1C1B1F; --muted:#6B6B70; --faint:#A0A0A5; --line:#E2E2E5;
+  --accent:#FF6F3F; --accent-tx:#fff; --error:#C62828; --field:#FFFFFF;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#1C1B1F; --text:#E6E1E5; --muted:#A3A0A8; --faint:#6C6971; --line:#2F2E34;
+          --accent:#D96A3E; --error:#F2726D; --field:#212024; }
+}
+* { box-sizing:border-box; }
+html, body { margin:0; }
+body { min-height:100vh; display:flex; flex-direction:column; background:var(--bg); color:var(--text);
+       font:15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; -webkit-font-smoothing:antialiased; }
+a { color:var(--accent); text-decoration:none; }
+.wrap { width:100%; max-width:760px; margin:0 auto; padding:0 32px; }
+@media (max-width:640px) { .wrap { padding:0 20px; } }
+header { border-bottom:1px solid var(--line); }
+header .wrap { display:flex; align-items:center; height:56px; }
+header .name { font-weight:600; }
+h1 { font-size:26px; font-weight:600; margin:40px 0 6px; letter-spacing:-.02em; }
+.lead { color:var(--muted); margin:0 0 28px; font-size:16px; }
+.lab { font-size:11px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); margin:34px 0 10px; }
+ol, ul { margin:0; padding-left:22px; }
+li { margin:6px 0; }
+li::marker { color:var(--muted); }
+code { font:13px ui-monospace, SFMono-Regular, Menlo, monospace; background:var(--field); border:1px solid var(--line); border-radius:4px; padding:1px 6px; }
+pre { font:13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background:var(--field); border:1px solid var(--line); border-radius:4px; padding:12px 14px; overflow-x:auto; margin:10px 0 0; }
+.install { margin:18px 0 6px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.note { font-size:13.5px; color:var(--muted); }
+.btn { font:inherit; font-size:15px; font-weight:500; padding:11px 22px; border-radius:4px; border:1px solid var(--accent);
+       background:var(--accent); color:var(--accent-tx); cursor:pointer; }
+.btn:hover { filter:brightness(.95); }
+.warn { color:var(--error); font-size:14px; }
+hr { border:0; border-top:1px solid var(--line); margin:34px 0 0; }
+footer { border-top:1px solid var(--line); margin-top:auto; padding:18px 0 28px; font-size:12.5px; color:var(--faint); text-align:center; }
+</style>
+<script type="module" src="https://unpkg.com/esp-web-tools@10.4.0/dist/web/install-button.js?module"></script>
+</head>
+<body>
+<header><div class="wrap"><span class="name">HydroTemp</span></div></header>
+
+<main class="wrap">
+  <h1>Install the firmware</h1>
+  <p class="lead">One button, no tools. The device then sets itself up from your phone.</p>
+
+  <div class="lab">You need</div>
+  <ul>
+    <li>An ESP32 board with a WROOM-32 module and 4 MB of flash, such as the ESP32 DevKit V1 with a CH340 or CP2102 USB chip.</li>
+    <li>A 0.96" SSD1306 OLED, 128&times;64, on I2C: SDA to GPIO22, SCL to GPIO21.</li>
+    <li>Two DS18B20 probes on one data line to GPIO4 with a 4.7 k&Omega; pull-up to VCC. The probes take power from the board: VCC to GPIO16, GND to GPIO2.</li>
+    <li>Chrome or Edge on a computer. Firefox and Safari cannot talk to serial ports.</li>
+  </ul>
+
+  <div class="lab">Install</div>
+  <ol>
+    <li>Connect the board's USB port to the computer.</li>
+    <li>Press the button, pick the serial port in the dialog, confirm. A fresh board takes about a minute.</li>
+  </ol>
+  <div class="install">
+    <esp-web-install-button manifest="manifest.json">
+      <button class="btn" slot="activate">Install HydroTemp</button>
+      <span class="warn" slot="unsupported">This browser cannot access serial ports. Use Chrome or Edge, or flash with esptool below.</span>
+      <span class="warn" slot="not-allowed">Serial access needs HTTPS. Open this page over https://.</span>
+    </esp-web-install-button>
+    <span class="note">Reinstalling keeps your settings, sensor binding and history unless you choose "erase".</span>
+  </div>
+
+  <div class="lab">Then</div>
+  <ol>
+    <li>The OLED shows four hex digits and <code>192.168.4.1</code>. On your phone, join the Wi-Fi network <code>HydroTemp-XXXX</code> with those digits. The setup page opens by itself; if not, open <code>http://192.168.4.1/</code>.</li>
+    <li>Pick your home Wi-Fi, enter the password, save. The device restarts and is reachable at <code>http://hydrotemp-xxxx.local/</code> or at the address your router gave it.</li>
+    <li>The probes are bound to the slots <code>left</code> and <code>right</code> in the order they are found. Rename them and set their ranges on the Settings page.</li>
+  </ol>
+
+  <div class="lab">If the port does not show up</div>
+  <ul>
+    <li>Windows may need the CH340 or CP210x driver from the chip vendor; macOS and Linux have them built in.</li>
+    <li>Use a data cable, not a charge-only one.</li>
+    <li>Close other programs that may hold the port, such as a serial monitor.</li>
+    <li>If the flasher cannot connect, hold the board's BOOT button while it starts.</li>
+  </ul>
+
+  <div class="lab">Without a browser</div>
+  <p class="note">The same image, <a href="hydrotemp.bin">hydrotemp.bin</a>, flashed with <a href="https://docs.espressif.com/projects/esptool/">esptool</a>:</p>
+  <pre>esptool --chip esp32 -p PORT -b 460800 write-flash 0x0 hydrotemp.bin</pre>
+  <p class="note">Or with Espressif Flash Download Tool on Windows: chip ESP32, file <code>hydrotemp.bin</code> at address <code>0x0</code>, SPI mode DIO.</p>
+</main>
+
+<footer>HydroTemp · <a href="https://github.com/GrakovNe/esp32-hydro-temp">source</a> · MIT License</footer>
+</body>
+</html>

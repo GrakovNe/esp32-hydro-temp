@@ -38,6 +38,12 @@ Flash the app only (settings in `nvs` and the history partition
 survive): `idf.py -p /dev/cu.usbserial-210 -b 460800 app-flash`.
 Full image with `flash`, factory state with `erase-flash`.
 
+Releases: pushing a `v*` tag runs `.github/workflows/release.yml`, which
+builds `hydrotemp.bin` (merged, offset 0; the ESP32 bootloader sits at
+0x1000 inside it) and the app image, attaches both to the release and
+deploys `flasher/` (ESP Web Tools) to GitHub Pages. GitHub Pages must
+be set to "GitHub Actions" in the repository settings.
+
 Console capture without `esp_idf_monitor` (it needs a TTY and the port
 is simple enough):
 

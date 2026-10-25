@@ -15,6 +15,14 @@ publishes to MQTT with Home Assistant discovery.
 
 Pins are in `idf.py menuconfig` under "HydroTemp".
 
+## Install a ready-made firmware
+
+Open <https://grakovne.github.io/esp32-hydro-temp/> in Chrome or Edge,
+connect the board over USB, press Install. The page also has the image
+and the command for `esptool`. Every tagged release publishes
+`hydrotemp.bin` (complete image for offset 0) and `esp32_hydro_temp.bin`
+(app only, offset 0x10000) on the Releases page.
+
 ## Build from source
 
 ESP-IDF v5.5.x with the `esp32` target.
@@ -25,6 +33,20 @@ idf.py set-target esp32
 idf.py build
 idf.py -p /dev/cu.usbserial-XXXX -b 460800 flash monitor
 ```
+
+One image for the web flasher:
+
+```bash
+esptool --chip esp32 merge-bin -o build/hydrotemp.bin \
+  --flash-mode dio --flash-size 4MB --flash-freq 40m \
+  0x1000 build/bootloader/bootloader.bin \
+  0x8000 build/partition_table/partition-table.bin \
+  0x10000 build/esp32_hydro_temp.bin
+```
+
+A release is a pushed `v*` tag: GitHub Actions builds both images,
+attaches them to the release and publishes the flasher page to GitHub
+Pages.
 
 The first build downloads `mdns`, `onewire_bus` and `ds18b20` from the
 component registry.

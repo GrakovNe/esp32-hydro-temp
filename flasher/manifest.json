@@ -1,0 +1,13 @@
+{
+  "name": "HydroTemp",
+  "version": "__VERSION__",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32",
+      "parts": [
+        { "path": "hydrotemp.bin", "offset": 0 }
+      ]
+    }
+  ]
+}
