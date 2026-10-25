@@ -1,0 +1,15 @@
+.cache/
+.idea/
+.vscode/
+*.pyc
+build.log
+build*/
+dependencies.lock
+managed_components/
+sdkconfig
+sdkconfig.old
+test/host/*.dSYM/
+test/host/test_appconf
+test/host/test_history_ring
+test/host/test_fresh
+test/host/test_config_merge

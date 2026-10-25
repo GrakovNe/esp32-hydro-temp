@@ -1,0 +1,27 @@
+menu "HydroTemp"
+
+    config APP_I2C_SDA_GPIO
+        int "OLED I2C SDA GPIO"
+        default 22
+
+    config APP_I2C_SCL_GPIO
+        int "OLED I2C SCL GPIO"
+        default 21
+
+    config APP_OLED_FLIP
+        bool "Rotate the OLED by 180 degrees"
+        default y
+
+    config APP_ONEWIRE_GPIO
+        int "DS18B20 1-Wire data GPIO"
+        default 4
+
+    config APP_SENSOR_VCC_GPIO
+        int "GPIO that powers the sensors (driven high), -1 for none"
+        default 16
+
+    config APP_SENSOR_GND_GPIO
+        int "GPIO that grounds the sensors (driven low), -1 for none"
+        default 2
+
+endmenu
