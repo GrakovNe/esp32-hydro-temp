@@ -4,6 +4,7 @@
  */
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "appconf.h"
@@ -34,3 +35,6 @@ void hist_store_init(hist_store_t *s);
 void hist_store_append(hist_store_t *s, hist_rec_t r);
 
 uint16_t hist_store_sorted(const hist_store_t *s, hist_rec_t *out);
+
+/* The most recently appended record; false when the ring is empty. */
+bool hist_store_last(const hist_store_t *s, hist_rec_t *out);

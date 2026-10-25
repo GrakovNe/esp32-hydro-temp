@@ -470,7 +470,12 @@ $("save").onclick = async () => {
     device: { name: $("name").value },
     wifi: { ssid: selectedSsid },
     time: { ntp_server: $("ntp").value },
-    sensors: [0, 1].map(i => ({ name: $("s" + i + "_name").value.trim(), low: Number($("s" + i + "_low").value), high: Number($("s" + i + "_high").value) })),
+    sensors: [0, 1].map(i => {
+      const s = { name: $("s" + i + "_name").value.trim() };
+      if ($("s" + i + "_low").value !== "") s.low = Number($("s" + i + "_low").value);
+      if ($("s" + i + "_high").value !== "") s.high = Number($("s" + i + "_high").value);
+      return s;
+    }),
     polling: { interval_s: Number($("poll").value || DEF_POLL) },
     mqtt: {
       enabled: $("mq_en").checked,

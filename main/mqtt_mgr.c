@@ -188,7 +188,7 @@ static char *reading_json(const sensors_reading_t *r, int i)
     }
     const appconf_sensor_t *sc = &ctx.cfg->sensor[i];
     const sensors_slot_t *ss = &r->slot[i];
-    bool fresh = slot_fresh(r, i);
+    bool fresh = fresh_slot(r, i);
     if (fresh) {
         cJSON_AddNumberToObject(root, "temperature", appconf_deg(ss->temp_c100));
         cJSON_AddBoolToObject(root, "out_of_range",
@@ -274,8 +274,8 @@ static void publish_task(void *arg)
         }
 
         /* One publish per poll, retried every second until both messages
-         * are accepted. published_seq is reset when the configs go out, so
-         * Home Assistant gets the state right after the entities. */
+         * are accepted. mqtt_event resets published_seq together with
+         * discovery_dirty, so the state follows the configs. */
         sensors_reading_t r;
         sensors_get(&r);
         if (r.seq == 0 || r.seq == ctx.published_seq) {
@@ -341,15 +341,17 @@ void mqtt_mgr_start(const appconf_t *cfg, const char device_id[5])
     }
     ctx.enabled = true;
 
-    snprintf(ctx.t_avail, sizeof ctx.t_avail, "%s/availability", cfg->mqtt_prefix);
-    snprintf(ctx.dev_id, sizeof ctx.dev_id, "hydrotemp_%s", device_id);
+    appconf_avail_topic(cfg, ctx.t_avail, sizeof ctx.t_avail);
+    char dev_id[sizeof ctx.dev_id];
+    snprintf(dev_id, sizeof dev_id, "hydrotemp_%s", device_id);
+    strcpy(ctx.dev_id, dev_id);
     for (int i = 0; i < APPCONF_SENSOR_COUNT; i++) {
         slot_topics_t *st = &ctx.slot[i];
         appconf_sensor_topic(cfg, i, st->topic, sizeof st->topic);
-        snprintf(st->id_temp, sizeof st->id_temp, "hydrotemp_%s_%c_temperature",
-                 device_id, 'a' + i);
-        snprintf(st->id_range, sizeof st->id_range, "hydrotemp_%s_%c_out_of_range",
-                 device_id, 'a' + i);
+        snprintf(st->id_temp, sizeof st->id_temp, "%s_%c_temperature", dev_id,
+                 appconf_slot_letter(i));
+        snprintf(st->id_range, sizeof st->id_range, "%s_%c_out_of_range", dev_id,
+                 appconf_slot_letter(i));
     }
 
     esp_mqtt_client_config_t mc = { 0 };
@@ -395,6 +397,7 @@ void mqtt_mgr_start(const appconf_t *cfg, const char device_id[5])
     esp_err_t err = esp_mqtt_client_start(ctx.client);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "esp_mqtt_client_start: %s", esp_err_to_name(err));
+        ctx.enabled = false;
         return;
     }
 

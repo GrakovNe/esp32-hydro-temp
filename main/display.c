@@ -20,13 +20,13 @@
 
 static const char *TAG = "display";
 
-/* Each row is three blocks: the letter, the temperature in the middle
- * two thirds, the face. The LAYOUT_* geometry comes from glyphs.h so the
- * preview in tools/gen_glyphs.py matches. */
+/* LAYOUT_* comes from glyphs.h, where tools/gen_glyphs.py defines it. */
 _Static_assert(LAYOUT_SCREEN_W == OLED_W && LAYOUT_SCREEN_H == OLED_H,
                "generator and panel disagree on the screen size");
+_Static_assert(APPCONF_SENSOR_COUNT * LAYOUT_ROW_H <= LAYOUT_SCREEN_H,
+               "not every sensor gets a row");
 
-#define REDRAW_MS     1000
+#define CHECK_MS      1000
 #define OLED_I2C_ADDR 0x3C
 #define OLED_I2C_HZ   100000   /* 400 kHz failed on this panel */
 
@@ -93,7 +93,7 @@ static void draw_row(int i, const sensors_reading_t *r)
 
     const uint8_t *face = face_none;
     char value[8] = "--.-";
-    if (slot_fresh(r, i)) {
+    if (fresh_slot(r, i)) {
         int16_t t = r->slot[i].temp_c100;
         appconf_format_c100(t, 1, value, sizeof value);
         if (text_width(value, 1) > LAYOUT_VALUE_MAX_W) {
@@ -116,7 +116,6 @@ static void draw_readings(const sensors_reading_t *r)
     oled_flush();
 }
 
-/* Setup screen: the AP name's suffix large, the portal address small. */
 static void draw_setup(void)
 {
     oled_clear();
@@ -139,7 +138,7 @@ static void display_task(void *arg)
                 draw_setup();
                 drawn_setup = true;
             }
-            vTaskDelay(pdMS_TO_TICKS(REDRAW_MS));
+            vTaskDelay(pdMS_TO_TICKS(CHECK_MS));
             continue;
         }
 
@@ -148,7 +147,7 @@ static void display_task(void *arg)
         /* A reading going stale changes the face without a new seq. */
         uint32_t fresh_bits = 0;
         for (int i = 0; i < APPCONF_SENSOR_COUNT; i++) {
-            fresh_bits = fresh_bits * 2 + (slot_fresh(&r, i) ? 1 : 0);
+            fresh_bits = fresh_bits * 2 + (fresh_slot(&r, i) ? 1 : 0);
         }
         if (drawn_setup || r.seq != drawn_seq || fresh_bits != drawn_fresh_bits) {
             draw_readings(&r);
@@ -156,7 +155,7 @@ static void display_task(void *arg)
             drawn_fresh_bits = fresh_bits;
             drawn_setup = false;
         }
-        vTaskDelay(pdMS_TO_TICKS(REDRAW_MS));
+        vTaskDelay(pdMS_TO_TICKS(CHECK_MS));
     }
 }
 

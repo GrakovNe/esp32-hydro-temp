@@ -27,12 +27,12 @@
 static const char *TAG = "sensors";
 
 /* Seconds between power-up and the first poll: the probes and the bus
- * settle, and the first conversion is not an 85 C power-on default. */
-#define SETTLE_S            5
-#define MAX_ON_BUS          8
-#define DS18B20_FAMILY      0x28
-#define DS18B20_POWER_ON_C  85.0f   /* scratchpad default before any conversion */
-#define READ_ATTEMPTS       3
+ * settle, and the first conversion is real (appconf_reading_ok). */
+#define SETTLE_S       5
+#define MIN_GAP_MS     1000
+#define MAX_ON_BUS     8
+#define DS18B20_FAMILY 0x28
+#define READ_ATTEMPTS  3
 
 typedef struct {
     ds18b20_device_handle_t dev;
@@ -147,7 +147,8 @@ static int scan(onewire_device_t *found)
 
 /* Known sensors keep their slots; unknown ones get the free slots in ROM
  * order (appconf_free_slot). New bindings are saved so a sensor keeps
- * its slot and name across reboots. */
+ * its slot and name across reboots. A truncated search binds nothing:
+ * the probes it did not reach are not missing. */
 static void bind(onewire_device_t *found, int n, bool seen[APPCONF_SENSOR_COUNT])
 {
     bool bound[MAX_ON_BUS] = { 0 };
@@ -162,7 +163,7 @@ static void bind(onewire_device_t *found, int n, bool seen[APPCONF_SENSOR_COUNT]
         }
     }
 
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < n && ctx.bus_ok; i++) {
         if (bound[i]) {
             continue;
         }
@@ -175,7 +176,9 @@ static void bind(onewire_device_t *found, int n, bool seen[APPCONF_SENSOR_COUNT]
         }
         ESP_LOGI(TAG, "slot %d (%s) <- %s%s", k, ctx.cfg->sensor[k].name, rs,
                  ctx.cfg->sensor[k].rom != 0 ? " (replaces missing sensor)" : "");
+        xSemaphoreTake(ctx.lock, portMAX_DELAY);
         ctx.cfg->sensor[k].rom = found[i].address;
+        xSemaphoreGive(ctx.lock);
         seen[k] = true;
         attach(k, &found[i]);
         settings_save_rom(k, found[i].address);
@@ -192,12 +195,10 @@ static bool read_slot(int i, int attempts, int16_t *out)
         if (err == ESP_OK) {
             err = ds18b20_get_temperature(sl->dev, &t);
         }
-        /* An all-zero scratchpad (data line shorted low) passes the CRC
-         * and reads as exactly 0.0, like 85.0 is the power-on default. */
-        if (err == ESP_OK && t * 100.0f >= APPCONF_TEMP_MIN_C100 &&
-            t * 100.0f <= APPCONF_TEMP_MAX_C100 && t != DS18B20_POWER_ON_C &&
-            t != 0.0f) {
-            *out = (int16_t)lroundf(t * 100.0f);
+        long c100 = err == ESP_OK ? lroundf(t * 100.0f) : 0;
+        if (err == ESP_OK && c100 >= INT16_MIN && c100 <= INT16_MAX &&
+            appconf_reading_ok((int16_t)c100)) {
+            *out = (int16_t)c100;
             return true;
         }
         sl->errors++;
@@ -276,7 +277,7 @@ static void sensors_task(void *arg)
         poll_once();
         int64_t spent_ms = (esp_timer_get_time() - start) / 1000;
         int64_t wait_ms = (int64_t)ctx.cfg->poll_interval_s * 1000 - spent_ms;
-        vTaskDelay(pdMS_TO_TICKS(wait_ms > 1000 ? wait_ms : 1000));
+        vTaskDelay(pdMS_TO_TICKS(wait_ms > MIN_GAP_MS ? wait_ms : MIN_GAP_MS));
     }
 }
 

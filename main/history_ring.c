@@ -51,3 +51,12 @@ uint16_t hist_store_sorted(const hist_store_t *s, hist_rec_t *out)
     }
     return n;
 }
+
+bool hist_store_last(const hist_store_t *s, hist_rec_t *out)
+{
+    if (s->count == 0) {
+        return false;
+    }
+    *out = s->rec[(s->next + HIST_RING_CAP - 1) % HIST_RING_CAP];
+    return true;
+}

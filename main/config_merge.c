@@ -8,7 +8,8 @@
 #include <stdio.h>
 #include <string.h>
 
-static bool merge_str(const cJSON *obj, const char *key, char *dst, size_t cap,
+/* dst_sz is the buffer size; the string may be one byte shorter. */
+static bool merge_str(const cJSON *obj, const char *key, char *dst, size_t dst_sz,
                       char *err, size_t err_sz)
 {
     const cJSON *v = cJSON_GetObjectItemCaseSensitive(obj, key);
@@ -19,9 +20,9 @@ static bool merge_str(const cJSON *obj, const char *key, char *dst, size_t cap,
     if (v == NULL) {
         return true;
     }
-    if (!cJSON_IsString(v) || strnlen(v->valuestring, cap + 1) > cap) {
+    if (!cJSON_IsString(v) || strnlen(v->valuestring, dst_sz) >= dst_sz) {
         snprintf(err, err_sz, "\"%s\" must be a string of at most %u bytes",
-                 key, (unsigned)cap);
+                 key, (unsigned)dst_sz - 1);
         return false;
     }
     strcpy(dst, v->valuestring);
@@ -78,7 +79,6 @@ static bool merge_temp(const cJSON *obj, const char *key, int16_t *dst,
     return true;
 }
 
-/* An absent section is fine; a present one must be an object. */
 static bool section(const cJSON *root, const char *key, const cJSON **out,
                     char *err, size_t err_sz)
 {

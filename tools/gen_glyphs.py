@@ -135,7 +135,6 @@ def render_glyph(ch):
     return px
 
 
-
 def ring(px, cx, cy, r_out, r_in):
     for y in range(len(px)):
         for x in range(len(px[0])):
@@ -285,7 +284,7 @@ def png(path, screen, scale=4):
 
 def preview(path, rows):
     screen = blank(SCREEN_W, SCREEN_H)
-    for row, spec in enumerate(rows[:2]):
+    for row, spec in enumerate(rows[:SCREEN_H // ROW_H]):
         letter, value, face = spec.split()
         draw_row(screen, letter, value, face, row)
     png(path, screen)

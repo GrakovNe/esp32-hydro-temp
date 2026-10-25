@@ -26,7 +26,6 @@ extern "C" {
 
 #define APPCONF_NTP_DEFAULT      "pool.ntp.org"
 #define APPCONF_MQTT_PORT_PLAIN  1883
-#define APPCONF_MQTT_PORT_TLS    8883
 #define APPCONF_POLL_DEFAULT_S   300
 #define APPCONF_POLL_MIN_S       10
 #define APPCONF_POLL_MAX_S       3600
@@ -82,11 +81,29 @@ void appconf_derive(appconf_t *c, const char device_id[5]);
 
 bool appconf_validate(const appconf_t *c, char *err, size_t err_sz);
 
+/* Keeps every field group of *c that validates on top of the defaults and
+ * resets the rest, so a stored config that no longer passes (older
+ * firmware, corrupt entry) cannot outlive an update. Sensor ROMs are kept
+ * as is. Returns how many groups were reset. */
+int appconf_sanitize(appconf_t *c, const char device_id[5]);
+
 /* Topic segment for a sensor name: lower case, spaces become "_". */
 void appconf_sensor_slug(const char *name, char *out, size_t out_sz);
 
 void appconf_sensor_topic(const appconf_t *c, int slot, char *out,
                           size_t out_sz);
+
+/* "<prefix>/availability"; the segment is reserved, no sensor may slug
+ * to it. */
+void appconf_avail_topic(const appconf_t *c, char *out, size_t out_sz);
+
+/* 'a' for slot 0, 'b' for slot 1: the API's "slot" and the HA ids. */
+char appconf_slot_letter(int slot);
+
+/* A DS18B20 reading worth keeping. Exactly 0.0 and 85.0 are rejected: a
+ * data line shorted low reads as all-zero scratchpad bytes with a valid
+ * CRC, and 85.0 is the power-on default before any conversion. */
+bool appconf_reading_ok(int16_t c100);
 
 /* The one letter shown on the display for a sensor: its first letter or
  * digit in upper case, "?" when the name has none. */

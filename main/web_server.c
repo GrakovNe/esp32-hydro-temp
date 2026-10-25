@@ -184,13 +184,13 @@ static cJSON *sensor_json(int i, const sensors_reading_t *r)
     if (o == NULL) {
         return NULL;
     }
-    char slot[2] = { (char)('a' + i), '\0' };
+    char slot[2] = { appconf_slot_letter(i), '\0' };
     cJSON_AddStringToObject(o, "slot", slot);
     cJSON_AddStringToObject(o, "name", sc->name);
     cJSON_AddNumberToObject(o, "low", appconf_deg(sc->low_c100));
     cJSON_AddNumberToObject(o, "high", appconf_deg(sc->high_c100));
     cJSON_AddBoolToObject(o, "present", ss->present);
-    if (slot_fresh(r, i)) {
+    if (fresh_slot(r, i)) {
         cJSON_AddNumberToObject(o, "temperature", appconf_deg(ss->temp_c100));
         cJSON_AddNumberToObject(o, "age_s", ss->age_ms / 1000u);
         cJSON_AddBoolToObject(o, "out_of_range",
@@ -244,16 +244,9 @@ static esp_err_t handler_history(httpd_req_t *req)
     int len = snprintf(buf, sizeof buf, "{\"step_s\":%" PRIu32 ",\"sensors\":[",
                        history_step_s());
     esp_err_t err = httpd_resp_send_chunk(req, buf, len);
+    /* Names are validated to [A-Za-z0-9 _-], nothing to escape. */
     for (int i = 0; i < APPCONF_SENSOR_COUNT && err == ESP_OK; i++) {
-        cJSON *name = cJSON_CreateString(s_cfg->sensor[i].name);
-        char *q = name != NULL ? cJSON_PrintUnformatted(name) : NULL;
-        cJSON_Delete(name);
-        if (q == NULL) {
-            err = ESP_ERR_NO_MEM;
-            break;
-        }
-        len = snprintf(buf, sizeof buf, "%s%s", i ? "," : "", q);
-        cJSON_free(q);
+        len = snprintf(buf, sizeof buf, "%s\"%s\"", i ? "," : "", s_cfg->sensor[i].name);
         err = httpd_resp_send_chunk(req, buf, len);
     }
     if (err == ESP_OK) {

@@ -74,6 +74,15 @@ static void test_sensor_helpers(void)
     char topic[APPCONF_TOPIC_MAX + 1];
     appconf_sensor_topic(&c, 0, topic, sizeof topic);
     CHECK_STR(topic, "esp32-hydro-temp/1a2b/left");
+    appconf_avail_topic(&c, topic, sizeof topic);
+    CHECK_STR(topic, "esp32-hydro-temp/1a2b/availability");
+    CHECK(appconf_slot_letter(0) == 'a' && appconf_slot_letter(1) == 'b');
+
+    CHECK(appconf_reading_ok(2137));
+    CHECK(appconf_reading_ok(-5500) && appconf_reading_ok(12500));
+    CHECK(!appconf_reading_ok(-5501) && !appconf_reading_ok(12501));
+    CHECK(!appconf_reading_ok(0) && !appconf_reading_ok(8500));
+    CHECK(appconf_reading_ok(6) && appconf_reading_ok(8506));
 
     strcpy(c.sensor[1].name, "Sweet Potato");
     appconf_sensor_topic(&c, 1, topic, sizeof topic);
@@ -162,6 +171,10 @@ static void test_validate_sensors(void)
     CHECK(!appconf_validate(&c, err, sizeof err));
 
     appconf_defaults(&c, ID);
+    strcpy(c.sensor[1].name, "Availability");
+    CHECK(!appconf_validate(&c, err, sizeof err));
+
+    appconf_defaults(&c, ID);
     memset(c.sensor[1].name, 'x', APPCONF_SENSOR_NAME_MAX + 1);
     CHECK(!appconf_validate(&c, err, sizeof err));
 
@@ -230,7 +243,7 @@ static void test_validate_mqtt(void)
 
     c.mqtt_port = 0;
     CHECK(!appconf_validate(&c, err, sizeof err));
-    c.mqtt_port = APPCONF_MQTT_PORT_TLS;
+    c.mqtt_port = 8883;
 
     strcpy(c.mqtt_prefix, "has space");
     CHECK(!appconf_validate(&c, err, sizeof err));
@@ -263,6 +276,45 @@ static void test_validate_cert(void)
     CHECK(appconf_validate(&c, err, sizeof err));
 }
 
+static void test_sanitize(void)
+{
+    appconf_t c;
+    char err[128];
+
+    appconf_defaults(&c, ID);
+    CHECK(appconf_sanitize(&c, ID) == 0);
+
+    /* What an old firmware let through: a reserved name next to good data. */
+    strcpy(c.sensor[0].name, "Availability");
+    c.sensor[0].rom = 0x28216531054AC79Bull;
+    strcpy(c.sensor[1].name, "Potato");
+    strcpy(c.wifi_ssid, "home");
+    strcpy(c.wifi_password, "secret123");
+    c.poll_interval_s = 0;
+    CHECK(appconf_sanitize(&c, ID) == 2);
+    CHECK(appconf_validate(&c, err, sizeof err));
+    CHECK(strcmp(c.sensor[0].name, "left") == 0);
+    CHECK(c.sensor[0].rom == 0x28216531054AC79Bull);
+    CHECK(strcmp(c.sensor[1].name, "Potato") == 0);
+    CHECK(strcmp(c.wifi_ssid, "home") == 0);
+    CHECK(c.poll_interval_s == APPCONF_POLL_DEFAULT_S);
+
+    /* Slot 1 taking slot 0's default name must not leave a duplicate. */
+    appconf_defaults(&c, ID);
+    strcpy(c.sensor[0].name, "right");
+    strcpy(c.sensor[1].name, "right");
+    CHECK(appconf_sanitize(&c, ID) == 1);
+    CHECK(appconf_validate(&c, err, sizeof err));
+
+    appconf_defaults(&c, ID);
+    c.mqtt_enabled = true;
+    c.mqtt_host[0] = '\0';
+    strcpy(c.mqtt_prefix, "tank/#");
+    CHECK(appconf_sanitize(&c, ID) == 2);
+    CHECK(!c.mqtt_enabled);
+    CHECK(appconf_validate(&c, err, sizeof err));
+}
+
 int main(void)
 {
     test_device_id();
@@ -274,5 +326,6 @@ int main(void)
     test_validate_wifi();
     test_validate_mqtt();
     test_validate_cert();
+    test_sanitize();
     REPORT();
 }

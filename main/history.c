@@ -70,6 +70,17 @@ void history_add(const int16_t temp_c100[HIST_CHANNELS],
         s_window = window;
         memset(s_sum, 0, sizeof s_sum);
         memset(s_n, 0, sizeof s_n);
+        /* After a restart inside a window the flushed average counts as
+         * one sample, so the pre-restart readings are not lost. */
+        hist_rec_t last;
+        if (hist_store_last(&s_store, &last) && last.t == window) {
+            for (int c = 0; c < HIST_CHANNELS; c++) {
+                if (last.temp_c100[c] != HIST_NO_TEMP) {
+                    s_sum[c] = last.temp_c100[c];
+                    s_n[c] = 1;
+                }
+            }
+        }
     }
     bool have = false;
     for (int c = 0; c < HIST_CHANNELS; c++) {

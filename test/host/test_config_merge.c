@@ -63,6 +63,15 @@ static void test_sensors(void)
     CHECK(!merge(&c, "{\"sensors\":[{\"name\":null},{}]}", err, sizeof err));
     CHECK(strstr(err, "must be a string") != NULL);
 
+    /* 24 characters fit, 25 do not (and never touch the byte past the array). */
+    appconf_defaults(&c, ID);
+    CHECK(merge(&c, "{\"sensors\":[{\"name\":\"abcdefghijklmnopqrstuvwx\"},{}]}",
+                err, sizeof err));
+    CHECK(strlen(c.sensor[0].name) == 24);
+    CHECK(!merge(&c, "{\"sensors\":[{\"name\":\"abcdefghijklmnopqrstuvwxy\"},{}]}",
+                 err, sizeof err));
+    CHECK(strstr(err, "at most 24 bytes") != NULL);
+
     appconf_defaults(&c, ID);
     CHECK(!merge(&c, "{\"sensors\":[{\"name\":\"Mint\"},{\"name\":\"mint\"}]}",
                  err, sizeof err));

@@ -172,6 +172,11 @@ void settings_load(appconf_t *c, const char device_id[5])
     nvs_close(h);
 
     appconf_derive(c, device_id);
+    int reset = appconf_sanitize(c, device_id);
+    if (reset > 0) {
+        ESP_LOGW(TAG, "stored settings invalid, %d group(s) reset to defaults",
+                 reset);
+    }
 }
 
 esp_err_t settings_save(const appconf_t *c)
@@ -201,7 +206,6 @@ esp_err_t settings_save(const appconf_t *c)
         PUT(nvs_set_str(h, slot_key(i, "name", k, sizeof k), s->name));
         PUT(nvs_set_i16(h, slot_key(i, "low", k, sizeof k), s->low_c100));
         PUT(nvs_set_i16(h, slot_key(i, "high", k, sizeof k), s->high_c100));
-        PUT(nvs_set_u64(h, slot_key(i, "rom", k, sizeof k), s->rom));
     }
     PUT(nvs_set_u8(h, KEY_MQ_EN, c->mqtt_enabled));
     PUT(nvs_set_str(h, KEY_MQ_HOST, c->mqtt_host));

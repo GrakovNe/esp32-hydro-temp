@@ -31,7 +31,8 @@ typedef struct {
     bool     bus_ok;
 } sensors_reading_t;
 
-/* Binds ROM codes to free slots in cfg and saves them through settings. */
+/* Starts the bus and the poll task. cfg is not const: the poll task binds
+ * ROM codes into cfg->sensor[].rom and saves them (settings_save_rom). */
 void sensors_start(appconf_t *cfg);
 
 void sensors_get(sensors_reading_t *out);

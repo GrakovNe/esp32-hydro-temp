@@ -15,16 +15,16 @@ int main(void)
     sensors_reading_t r = { .max_age_ms = fresh_max_age_ms(300000) };
     r.slot[0].valid = true;
     r.slot[0].age_ms = 630000;
-    CHECK(slot_fresh(&r, 0));
+    CHECK(fresh_slot(&r, 0));
     r.slot[0].age_ms = 630001;
-    CHECK(!slot_fresh(&r, 0));
+    CHECK(!fresh_slot(&r, 0));
 
     r.slot[1].valid = false;
     r.slot[1].age_ms = 0;
-    CHECK(!slot_fresh(&r, 1));
+    CHECK(!fresh_slot(&r, 1));
 
     r.slot[1].valid = true;
     r.slot[1].age_ms = UINT32_MAX;
-    CHECK(!slot_fresh(&r, 1));
+    CHECK(!fresh_slot(&r, 1));
     REPORT();
 }

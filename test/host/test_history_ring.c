@@ -96,6 +96,21 @@ static void test_backwards_clock(void)
     CHECK(out[0].t == 200 && out[1].t == 300 && out[2].t == 400);
 }
 
+static void test_last(void)
+{
+    hist_store_t s;
+    hist_store_init(&s);
+    hist_rec_t r;
+    CHECK(!hist_store_last(&s, &r));
+    hist_store_append(&s, mk(100, 1, 2));
+    hist_store_append(&s, mk(200, 3, 4));
+    CHECK(hist_store_last(&s, &r) && r.t == 200 && r.temp_c100[1] == 4);
+    for (uint32_t i = 0; i < HIST_RING_CAP; i++) {
+        hist_store_append(&s, mk(1000 + i, 0, 0));
+    }
+    CHECK(hist_store_last(&s, &r) && r.t == 1000 + HIST_RING_CAP - 1);
+}
+
 static void test_empty_slot_skipped(void)
 {
     hist_store_t s;
@@ -119,6 +134,7 @@ int main(void)
     test_replace_same_window();
     test_wrap();
     test_backwards_clock();
+    test_last();
     test_empty_slot_skipped();
     REPORT();
 }

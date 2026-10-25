@@ -79,7 +79,7 @@ function check(cond, name) {
   const now = Math.floor(Date.now() / 1000);
   const sensorA = { slot: "a", name: "Mint", low: 18, high: 23, present: true, temperature: 21.37, age_s: 40, out_of_range: false,
                     rom: "28216531054AC79B", errors: 0, last_reading: now - 40 };
-  const sensorB = { slot: "b", name: "Sweet Potato", low: 18, high: 23, present: true, temperature: 24.5, age_s: 40, out_of_range: true,
+  const sensorB = { slot: "b", name: "Sweet Potato", low: 18, high: 23, present: true, temperature: 23.04, age_s: 40, out_of_range: false,
                     rom: "282167313A7ED4F0", errors: 2, last_reading: now - 40 };
   const status = {
     time: { timestamp: now, synced: true, uptime_s: 5231 },
@@ -90,7 +90,7 @@ function check(cond, name) {
     },
     mode: "normal",
     bus: { ok: true, found: 2, polls: 17, poll_interval_s: 300 },
-    sensors: [sensorA, sensorB],
+    sensors: [sensorA, { ...sensorB, temperature: 24.5, out_of_range: true }],
     wifi: { connected: true, ssid: "Home", bssid: "aa:bb:cc:dd:ee:ff", rssi: -58, channel: 6,
             ip: "192.168.1.42", gateway: "192.168.1.1", last_disconnect: "other" },
     mqtt: { enabled: true, connected: true, last_publish: now - 10, errors: 0 },
@@ -113,8 +113,15 @@ function check(cond, name) {
   check(m.els.t0.textContent === "21.4", "main: temp one decimal");
   check(m.els.t0fill.className === "fill good", "main: in-range green");
   check(m.els.t0d.innerHTML.includes("In range"), "main: in-range word");
-  check(m.els.t1fill.className === "fill bad", "main: too warm red");
-  check(m.els.t1d.innerHTML.includes("Too warm"), "main: too warm word");
+  check(m.els.t1.textContent === "23.0", "main: 23.04 shows as 23.0");
+  check(m.els.t1fill.className === "fill good", "main: verdict from the device, not the raw value");
+  const mb = await runPage(path.join(WEB, "main.html"), {
+    "/api/v1/current": { ...cur, sensors: [sensorA, { ...sensorB, temperature: 17.95, out_of_range: true }] },
+    "/api/v1/history": hist, "/api/v1/status": status,
+  });
+  check(mb.els.t1.textContent === "18.0", "main: 17.95 rounds half away from zero");
+  check(mb.els.t1fill.className === "fill cold", "main: out of range below low is cold");
+  check(mb.els.t1d.innerHTML.includes("Too cold"), "main: too cold word");
   check(m.els.t0ticks.innerHTML.includes("18.0") && m.els.t0ticks.innerHTML.includes("23.0"), "main: range ticks");
   check(m.els.upd.textContent.startsWith("Updated "), "main: updated line");
   check(m.els.upd.textContent.includes("every 5 min"), "main: poll period in footer");
@@ -123,6 +130,7 @@ function check(cond, name) {
   check((m.els["chart-1"].innerHTML.match(/<rect/g) || []).length === 2, "main: null skipped for sensor 2");
   check(m.els["chart-0"].innerHTML.includes("bar cold"), "main: cold bar colored");
   check(m.els["chart-1"].innerHTML.includes("bar bad"), "main: warm bar colored");
+  check(m.els.t0d.innerHTML.includes("40 s ago"), "main: age in seconds");
   check(m.els["chart-0"].innerHTML.includes(">18.0<") && m.els["chart-0"].innerHTML.includes(">23.0<"), "main: zone lines labelled");
   check(m.els["stats-0"].innerHTML.includes("max <b>22.0"), "main: max stat");
   check(m.doc.title === "Tank", "main: title is the device name");
@@ -258,10 +266,12 @@ function check(cond, name) {
   };
   s3.els.s1_name.value = "Potato";
   s3.els.s1_high.value = "24";
+  s3.els.s1_low.value = "";
   s3.els.poll.value = "120";
   await s3.els.save.onclick();
   check(posted && posted.sensors[1].name === "Potato", "setup: posts sensor name");
-  check(posted && posted.sensors[1].high === 24 && posted.sensors[1].low === 17.5, "setup: posts sensor range as numbers");
+  check(posted && posted.sensors[1].high === 24 && !("low" in posted.sensors[1]), "setup: empty range field is omitted");
+  check(posted && posted.sensors[0].low === 18, "setup: filled range field posted as number");
   check(posted && posted.polling.interval_s === 120, "setup: posts poll interval");
   check(posted && posted.mqtt.topic_prefix === "esp32-hydro-temp/9390", "setup: posts topic prefix");
 

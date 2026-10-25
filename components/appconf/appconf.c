@@ -180,6 +180,24 @@ void appconf_sensor_topic(const appconf_t *c, int slot, char *out,
     snprintf(out, out_sz, "%s/%s", c->mqtt_prefix, slug);
 }
 
+#define AVAIL_SEGMENT "availability"
+
+void appconf_avail_topic(const appconf_t *c, char *out, size_t out_sz)
+{
+    snprintf(out, out_sz, "%s/%s", c->mqtt_prefix, AVAIL_SEGMENT);
+}
+
+char appconf_slot_letter(int slot)
+{
+    return (char)('a' + slot);
+}
+
+bool appconf_reading_ok(int16_t c100)
+{
+    return c100 >= APPCONF_TEMP_MIN_C100 && c100 <= APPCONF_TEMP_MAX_C100 &&
+           c100 != 0 && c100 != 8500;
+}
+
 char appconf_sensor_letter(const char *name)
 {
     for (const char *p = name; *p != '\0'; p++) {
@@ -305,6 +323,9 @@ bool appconf_validate(const appconf_t *c, char *err, size_t err_sz)
             BAD("Sensor %d: low must be below high.", i + 1);
         }
         appconf_sensor_slug(s->name, slugs[i], sizeof slugs[i]);
+        if (strcmp(slugs[i], AVAIL_SEGMENT) == 0) {
+            BAD("Sensor %d name is reserved.", i + 1);
+        }
         for (int j = 0; j < i; j++) {
             if (strcmp(slugs[i], slugs[j]) == 0) {
                 BAD("Sensor names must differ.");
@@ -362,4 +383,92 @@ bool appconf_validate(const appconf_t *c, char *err, size_t err_sz)
 
     return true;
 #undef BAD
+}
+
+static void copy_device_name(appconf_t *dst, const appconf_t *src)
+{
+    memcpy(dst->device_name, src->device_name, sizeof dst->device_name);
+}
+
+static void copy_wifi(appconf_t *dst, const appconf_t *src)
+{
+    memcpy(dst->wifi_ssid, src->wifi_ssid, sizeof dst->wifi_ssid);
+    memcpy(dst->wifi_password, src->wifi_password, sizeof dst->wifi_password);
+}
+
+static void copy_ntp(appconf_t *dst, const appconf_t *src)
+{
+    memcpy(dst->ntp_server, src->ntp_server, sizeof dst->ntp_server);
+}
+
+static void copy_poll(appconf_t *dst, const appconf_t *src)
+{
+    dst->poll_interval_s = src->poll_interval_s;
+}
+
+static void copy_sensor_0(appconf_t *dst, const appconf_t *src)
+{
+    dst->sensor[0] = src->sensor[0];
+}
+
+static void copy_sensor_1(appconf_t *dst, const appconf_t *src)
+{
+    dst->sensor[1] = src->sensor[1];
+}
+
+static void copy_mqtt_link(appconf_t *dst, const appconf_t *src)
+{
+    dst->mqtt_enabled = src->mqtt_enabled;
+    memcpy(dst->mqtt_host, src->mqtt_host, sizeof dst->mqtt_host);
+    dst->mqtt_port = src->mqtt_port;
+    memcpy(dst->mqtt_username, src->mqtt_username, sizeof dst->mqtt_username);
+    memcpy(dst->mqtt_password, src->mqtt_password, sizeof dst->mqtt_password);
+    dst->mqtt_tls = src->mqtt_tls;
+    dst->mqtt_skip_verify = src->mqtt_skip_verify;
+    dst->mqtt_discovery = src->mqtt_discovery;
+}
+
+static void copy_mqtt_prefix(appconf_t *dst, const appconf_t *src)
+{
+    memcpy(dst->mqtt_prefix, src->mqtt_prefix, sizeof dst->mqtt_prefix);
+}
+
+static void copy_mqtt_ca(appconf_t *dst, const appconf_t *src)
+{
+    memcpy(dst->mqtt_ca_cert, src->mqtt_ca_cert, sizeof dst->mqtt_ca_cert);
+}
+
+_Static_assert(APPCONF_SENSOR_COUNT == 2, "one copy_sensor_N per slot");
+
+int appconf_sanitize(appconf_t *c, const char device_id[5])
+{
+    static void (*const groups[])(appconf_t *, const appconf_t *) = {
+        copy_device_name, copy_wifi, copy_ntp, copy_poll, copy_sensor_0,
+        copy_sensor_1, copy_mqtt_link, copy_mqtt_prefix, copy_mqtt_ca,
+    };
+    char err[128];
+    if (appconf_validate(c, err, sizeof err)) {
+        return 0;
+    }
+
+    /* The defaults validate, and a group is only taken when the result
+     * still does, so the outcome is valid whatever was stored. */
+    static appconf_t good, next;   /* too big for the stack; boot only */
+    appconf_defaults(&good, device_id);
+    for (int i = 0; i < APPCONF_SENSOR_COUNT; i++) {
+        good.sensor[i].rom = c->sensor[i].rom;
+    }
+    int reset = 0;
+    for (size_t g = 0; g < sizeof groups / sizeof groups[0]; g++) {
+        next = good;
+        groups[g](&next, c);
+        if (appconf_validate(&next, err, sizeof err)) {
+            good = next;
+        } else {
+            reset++;
+        }
+    }
+    *c = good;
+    appconf_derive(c, device_id);
+    return reset;
 }
